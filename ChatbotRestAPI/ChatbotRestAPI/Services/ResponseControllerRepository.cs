@@ -2,11 +2,13 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing.Printing;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http.Results;
@@ -17,6 +19,8 @@ namespace ChatbotRestAPI.Services
 {
 	public class ResponseControllerRepository
 	{
+        static object Lock = new object();
+
         private static List<string> PreprocessTags(List<string> tags)
         {
            
@@ -37,7 +41,8 @@ namespace ChatbotRestAPI.Services
             tags = PreprocessTags(tags);
 
             
-            List<JObject> placesNER = new List<JObject>();
+            List<JObject> placesNERtemp = new List<JObject>();
+            ConcurrentBag<JObject> placesNER = new ConcurrentBag<JObject>();
 
             if (location != null)
             {
@@ -57,28 +62,47 @@ namespace ChatbotRestAPI.Services
                     }
                     else return null;
 
-                    string text;
-                    string response;
-                    foreach (Blog blog in blogs)
+
+                    string response="";
+
+                    string text = "";
+
+                    List<string> contentBlogs = new List<string>();
+                    string title;
+                    // Use type parameter to make subtotal a long, not an int
+
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    Parallel.For<JObject>(0, blogs.Count, () => new JObject(), (i, loop, data) =>
                     {
+                        //string text="";
+                        string places;
 
-                        text = Crawler.ReadTextFrom(blog.BlogLink);
-                        text = Crawler.Preprocess(text);
+                        lock (Lock)
+                        {                 
+                           text = Crawler.ReadTextFrom(blogs[(int)i].BlogLink);
+                           text = Crawler.Preprocess(text);
+                        }
 
-                        response = RestAPICaller.GetPlacesNER(text, destination);
-                        var data = (JObject)JsonConvert.DeserializeObject(response);
+                        //System.IO.File.WriteAllText(@"C:\Users\Clara2\Desktop\Licenta\TestBERT\Blog" + i + ".txt", text);
 
-                        placesNER.Add(data);
-                        break;       
-                    }
+                        places = RestAPICaller.GetPlacesNER (text, destination);
+                        data = (JObject)JsonConvert.DeserializeObject(places);
 
-                    //if (placesNER.Count > 1)
-                    //{
-                        placesNER.Add((JObject)JsonConvert.DeserializeObject("{\"destination\":\"" + destination + "\"}"));
-                        response = RestAPICaller.GetPlacesNERFinal(JsonConvert.SerializeObject(placesNER));
-                    //}
-                    //else response = JsonConvert.SerializeObject(placesNER[0]);
+                        return data;
+                    },
+                        (x) =>  placesNER.Add(x)
+                        
+                    );
 
+                    watch.Stop();
+                    var elapsedMs = watch.ElapsedMilliseconds;
+                    System.IO.File.WriteAllText(@"C:\Users\Clara2\Desktop\Licenta\TestBERT\Time.txt", elapsedMs.ToString());
+                    //double time = Convert.ToDouble(endTime) - Convert.ToDouble(startTime); 
+                    placesNERtemp = placesNER.ToList();
+                    placesNERtemp.Add((JObject)JsonConvert.DeserializeObject("{\"destination\":\"" + destination + "\"}"));
+                    response = RestAPICaller.GetPlacesNERFinal(JsonConvert.SerializeObject(placesNERtemp));
+                    
+                   
                     return response;
                 }
                 else return "No Blogs with location!";
