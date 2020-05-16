@@ -30,6 +30,17 @@ namespace ChatbotRestAPI.Services
             return tags;
         }
 
+
+        private static List<string> FilterDestinationsByBlogs(List<string> destinations)
+        {
+            List<Blog> allBlogs = FireBaseDatabase.SelectAllBlogs();
+            List<string> filteredDestinations = new List<string>();
+            foreach (string destination in destinations)
+                if (allBlogs.Where(x => x.LocationName.ToLower().Equals(destination.ToLower())).Count() > 0)
+                    filteredDestinations.Add(destination);
+
+            return filteredDestinations;
+        }
 		public static string GetResponse(string input)
 		{
             input = input.ToLower();
@@ -49,6 +60,28 @@ namespace ChatbotRestAPI.Services
                 Destination destination = FireBaseDatabase.GetDestinationRelationship(location);
 
                 List<Blog> blogs =  FireBaseDatabase.SelectBlogsBy("locationName", location);
+
+                if((blogs == null || blogs.Count ==0) && destination !=null)
+                {
+                    if (destination.Country.Count > 1)
+                    {
+                        List<string> countries = FilterDestinationsByBlogs(destination.Country);
+                        return JsonConvert.SerializeObject(countries);
+                    }
+                    else
+                    if (destination.State.Count > 1)
+                    {
+                        List<string> states = FilterDestinationsByBlogs(destination.State);
+                        return JsonConvert.SerializeObject(states);
+                    }
+                    else
+                    if (destination.City.Count > 1)
+                    {
+                        List<string> cities = FilterDestinationsByBlogs(destination.City);
+                        return JsonConvert.SerializeObject(cities);
+                    }
+                }
+
                 List<Blog> filteredBlogsTags;
                 if (blogs != null)
                 {
@@ -123,6 +156,11 @@ namespace ChatbotRestAPI.Services
             string response = "";
 
             List<Blog> blogs = FireBaseDatabase.SelectBlogsBy("locationName", location);
+
+
+            if(blogs == null || blogs.Count == 0)
+                blogs = FireBaseDatabase.SelectBlogsBy("locationName", place);
+
             if (blogs != null)
             {
                 List<string> filters = new List<string>();
@@ -131,30 +169,42 @@ namespace ChatbotRestAPI.Services
                 List <Blog> filteredBlogsTags = FireBaseDatabase.FilterBlogsBy(filters, blogs);
                
                 string text;
+                List<string> paragrpahs = new List<string>();
 
                 if (filteredBlogsTags != null && filteredBlogsTags.Count != 0)
                 {
                     blogs = filteredBlogsTags;
                 }
                 else return "There is nothing matching your preferences...";
-
-                foreach (Blog blog in blogs)
+                Parallel.For<string>(0, blogs.Count, () => "", (i, loop, data) =>
                 {
-                    text = Crawler.ReadTextFrom(blog.BlogLink);
-                    text = Regex.Replace(text, @"((\n[A-Z a-z]+,)\s([A-Z a-z]+,)*\s*([A-Z a-z]+)\n)", "\n");
-                    text = Crawler.Preprocess(text);
+                    lock (Lock)
+                    {
+                        text = Crawler.ReadTextFrom(blogs[(int)i].BlogLink);
+                        text = Regex.Replace(text, @"((\n[A-Z a-z]+,)\s([A-Z a-z]+,)*\s*([A-Z a-z]+)\n)", "\n");
+                        text = Crawler.Preprocess(text);
+                    }
 
                     string json = RestAPICaller.GetParagraphs(text, place);
-
                     if (!json.All(x => !char.IsLetter(x)))
                     {
-                        //response = json.Replace("\"", "");
-                        response += json + "\n\n";
+                            //response = json.Replace("\"", "");
+                            data += json + "\n\n";
                     }
-                }
+                    
 
-                
+                    return data;
+                },
+                        (x) => paragrpahs.Add(x)
+
+                    );
+
+                foreach (string paragrpah in paragrpahs)
+                {
+                    response += paragrpah;
+                }
             }
+
             return response;
         }
         

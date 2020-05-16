@@ -7,32 +7,54 @@ namespace ChatbotRestAPI.Models
 {
 	public class Destination
 	{
-		public string City { set; get; }
-		public string Country { set; get; }
-		public string State { set; get; }
-		public string Continent { set; get; }
+		private List<string> city = new List<string>();
+		private List<string> country = new List<string>();
+		private List<string> state = new List<string>();
+		private List<string> continent = new List<string>();
+		public List<string> City
+		{
+			set { city = value; }
+			get { return city; }
+		}
 
+		public List<string> Country
+		{
+			set { country = value; }
+			get { return country; }
+		}
+
+		public List<string> State
+		{
+			set { state = value; }
+			get { return state; }
+		}
+
+		public List<string> Continent
+		{
+			set { continent = value; }
+			get { return continent; }
+		}
 		public override string ToString()
 		{
 			string dst = "";
 			if(City!=null)
 			{
-				dst += City+" ";
+				dst += City.ToString()+" ";
 			}
 
 			if(Country!=null)
 			{
-				dst += Country+" ";
+				dst += Country.ToString()+" ";
 			}
 
 			if(State!=null)
 			{
-				dst += State+" ";
+				dst += State.ToString()+" ";
 			}
 
 			if(Continent!=null)
 			{
-				dst += Continent;
+				dst += Continent.ToString();
 			}
 
 			return dst;

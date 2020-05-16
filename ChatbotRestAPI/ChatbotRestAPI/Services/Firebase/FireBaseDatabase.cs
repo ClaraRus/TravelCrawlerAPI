@@ -103,43 +103,60 @@ namespace WebCrawler
             if (typeof(City).IsInstanceOfType(currentDestination[0]))
             {
                 city = (City)currentDestination[0];
-                d.City = city.Name;
+                d.City.Add(city.Name);
 
                 country = SelectCountryBy("id", city.Country_Id)[0];
-                d.Country = country.Name;
+                d.Country.Add(country.Name);
 
                 state = SelectStateBy("id", city.State_id)[0];
-                d.State = state.Name;
+                d.State.Add(state.Name);
 
                 continent = SelectContinentBy("id", country.Continent_id)[0];
-                d.Continent = continent.Name;
+                d.Continent.Add(continent.Name);
 
             }
             else if(typeof(Country).IsInstanceOfType(currentDestination[0]))
             {
                 country =(Country)currentDestination[0];
-                d.Country = country.Name;
+                d.Country.Add(country.Name);
 
+                List<State> states = SelectStateBy("country_id", country.Id);
+                foreach(State c in states)
+                {
+                    d.City.Add(c.Name);
+                }
+                
                 continent = SelectContinentBy("id", country.Continent_id)[0];
-                d.Continent = continent.Name;
+                d.Continent.Add(continent.Name);
             }
             else if (typeof(State).IsInstanceOfType(currentDestination[0]))
             {
                 state = (State)currentDestination[0];
-                d.State = state.Name;
+                d.State.Add(state.Name);
+
+                List<City> cities = SelectCitytBy("state_id", state.Id);
+                foreach (City c in cities)
+                {
+                    d.City.Add(c.Name);
+                }
 
                 country = SelectCountryBy("id", state.Country_id)[0];
-                d.Country = country.Name;
+                d.Country.Add(country.Name);
 
            
                 continent = SelectContinentBy("id", country.Continent_id)[0];
-                d.Continent = continent.Name;
+                d.Continent.Add(continent.Name);
             }
             else if (typeof(Continent).IsInstanceOfType(currentDestination[0]))
             {
-               
                 continent = (Continent)currentDestination[0];
-                d.Continent = continent.Name;
+                d.Continent.Add(continent.Name);
+
+                List<Country> countries = SelectCountryBy("continent_id", continent.Id);
+                foreach (Country c in countries)
+                {
+                    d.Country.Add(c.Name);
+                }
             }
 
             return d;
