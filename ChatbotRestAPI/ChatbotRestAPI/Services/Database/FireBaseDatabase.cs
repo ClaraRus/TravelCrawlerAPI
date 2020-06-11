@@ -13,6 +13,7 @@ using System.Linq;
 using System.Collections;
 using Microsoft.Ajax.Utilities;
 using System.Security.Policy;
+using ChatbotRestAPI.Services;
 
 namespace WebCrawler
 {
@@ -41,7 +42,6 @@ namespace WebCrawler
 
                });
         }
-       
 
         public static  List<State> SelectStateBy(string field, string value)
         {
@@ -275,22 +275,6 @@ namespace WebCrawler
             return blogs;
         }
 
-
-        private static string FormatValutToJson(string fieldToUpdate, List<string> value)
-        {
-            string valueToUpdate = "{\"" + fieldToUpdate + "\":[";
-            foreach (string v in value)
-            {
-                if (v.Equals(value.Last()))
-                    valueToUpdate += "\"" + v + "\"";
-                else valueToUpdate += "\"" + v + "\"" + ",";
-
-            }
-            valueToUpdate += "]}";
-
-            return valueToUpdate;
-        }
-
         public static void UpdateBlog(string blogId, string fieldToUpdate, List<string> value)
         {
             var dbResult = firebaseClient
@@ -300,14 +284,13 @@ namespace WebCrawler
 
             var blogField = dbResult.Child(blogId); //.Child(fieldToUpdate);
 
-            string valueToUpdate = FormatValutToJson(fieldToUpdate, value);
+            string valueToUpdate = TextProcessor.FormatValutToJson(fieldToUpdate, value);
 
             blogField.PatchAsync((JObject)JsonConvert.DeserializeObject(valueToUpdate)).Wait();
         }
 
         public static List<Blog> FilterBlogsByFilters(List<string> tags, List<Blog> blogs)
         {
-
             //return blogs.Where(blog => blog.Tags.Contains(tags[0])).ToList();
             return blogs.Where(blog => blog.Tags.Intersect(tags).Count() == tags.Count()).ToList();
         }
@@ -316,7 +299,8 @@ namespace WebCrawler
             List<Blog> filteredBlogs = new List<Blog>();
             if (tags.Contains(Constants.ACTIVITIES))
             {
-                filteredBlogs = blogs.Where(blog => blog.Tags.Intersect(Constants.ACCOMODATION_TAGS).Count() == 0 && blog.Tags.Intersect(Constants.RESTAURANTS_TAGS).Count() == 0).ToList();
+                filteredBlogs = blogs.Where(blog => blog.Tags.Intersect(Constants.ACCOMODATION_TAGS).Count() == 0 
+                && blog.Tags.Intersect(Constants.RESTAURANTS_TAGS).Count() == 0).ToList();
                 if (tags.Count > 1)
                 {
                     tags.Remove(Constants.ACTIVITIES);
@@ -325,7 +309,8 @@ namespace WebCrawler
             }
             else if(tags.Contains(Constants.ACCOMODATION))
             {
-                filteredBlogs = blogs.Where(blog => blog.Tags.Intersect(Constants.ACCOMODATION_TAGS).Count() != 0 && blog.Tags.Intersect(Constants.RESTAURANTS_TAGS).Count() == 0).ToList();
+                filteredBlogs = blogs.Where(blog => blog.Tags.Intersect(Constants.ACCOMODATION_TAGS).Count() != 0 
+                && blog.Tags.Intersect(Constants.RESTAURANTS_TAGS).Count() == 0).ToList();
                 if (tags.Count > 1)
                 {
                     tags.Remove(Constants.ACCOMODATION);
@@ -345,7 +330,17 @@ namespace WebCrawler
             return filteredBlogs;
            
         }
-        
+
+        public static List<string> FilterDestinationsByBlogs(List<string> destinations)
+        {
+            List<Blog> allBlogs = FireBaseDatabase.SelectAllBlogs();
+            List<string> filteredDestinations = new List<string>();
+            foreach (string destination in destinations)
+                if (allBlogs.Where(x => x.LocationName.ToLower().Equals(destination.ToLower())).Count() > 0)
+                    filteredDestinations.Add(destination);
+
+            return filteredDestinations;
+        }
 
     }
 }

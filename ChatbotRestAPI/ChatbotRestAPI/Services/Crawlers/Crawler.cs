@@ -1,4 +1,5 @@
-﻿using HtmlAgilityPack;
+﻿using ChatbotRestAPI.Services;
+using HtmlAgilityPack;
 using Microsoft.Ajax.Utilities;
 using System;
 using System.Collections.Generic;
@@ -50,7 +51,8 @@ namespace WebCrawler
             System.Net.HttpWebRequest client = (HttpWebRequest)HttpWebRequest.Create(url);
 
             client.Method = "GET";
-            client.UserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36";
+            client.UserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) 
+                AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.106 Safari/537.36";
             try
             {
                 var response = (HttpWebResponse)client.GetResponse();
@@ -159,7 +161,6 @@ namespace WebCrawler
                 continentLinks = GetLinks(ContinentDivAttribute, ContinentDivAttributeName);
 
             ExtarctCountries();
-
             ExtractLinksUnderCountry();
 
             if (states != null)
@@ -173,7 +174,6 @@ namespace WebCrawler
                     }
                 }
             }
-
             if (cities != null)
             {
                 cities = cities.Distinct().ToList();
@@ -205,7 +205,8 @@ namespace WebCrawler
         {
             IEnumerable<HtmlNode> divs = GetDescendants(parent);
             if (divs != null)
-                return divs.Where(node => node.GetAttributeValue(attribute, "").Equals(valueAttribute)).FirstOrDefault();
+                return divs.Where(node => node.GetAttributeValue(attribute, "")
+                .Equals(valueAttribute)).FirstOrDefault();
             else return null;
         }
 
@@ -272,9 +273,33 @@ namespace WebCrawler
             return links;
         }
 
-        public string GetDate()
+
+        public static string ReadDateFrom(string link)
         {
-            HtmlNode spanNode = GetFirstDescendant("span", DateDivAttribute, DateDivAttributeName);
+            string date = "";
+            string className = link.Split('/')[2];
+            className = Regex.Split(className, ".com")[0];
+            className = "WebCrawler.Crawler_" + className;
+
+            Type t = Type.GetType(className);
+            if (t != null)
+            {
+                Object instance = (Object)Activator.CreateInstance(t);
+                PropertyInfo divAttribute = t.GetProperty("TextDivAttribute", BindingFlags.Instance
+                    | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+
+                PropertyInfo divAttributeName = t.GetProperty("TextDivAttributeName", BindingFlags.Instance
+                    | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+
+                initAsync(link);
+                date = GetDate((string)divAttribute.GetValue(instance), (string)divAttributeName.GetValue(instance));
+            }
+
+            return date;
+        }
+        private static string GetDate(string dateDivAttribute, string dateDivAttributeName)
+        {
+            HtmlNode spanNode = GetFirstDescendant("span", dateDivAttribute, dateDivAttributeName);
 
             string text = spanNode.InnerText;
             string datePattern = "((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Nov|Dec|Oct) (([1-3][0-9])|([0-9])), (20[0-9][0-9]))";
@@ -291,20 +316,15 @@ namespace WebCrawler
             className = Regex.Split(className, ".com")[0];
             className = "WebCrawler.Crawler_" + className;
 
-            //Type objType = typeof(Crawler_abrokenbackpack);
-
-
-
-            // Print the assembly qualified name.
-            //Console.WriteLine($"Assembly qualified name:\n   {objType.AssemblyQualifiedName}.");
-
             Type t = Type.GetType(className);
             if (t != null)
             {
-
                 Object instance = (Object)Activator.CreateInstance(t);
-                PropertyInfo divAttribute = t.GetProperty("TextDivAttribute", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
-                PropertyInfo divAttributeName = t.GetProperty("TextDivAttributeName", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+                PropertyInfo divAttribute = t.GetProperty("TextDivAttribute", BindingFlags.Instance 
+                    | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
+
+                PropertyInfo divAttributeName = t.GetProperty("TextDivAttributeName", BindingFlags.Instance 
+                    | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy);
 
                 initAsync(link);
                 text = GetText((string)divAttribute.GetValue(instance), (string)divAttributeName.GetValue(instance));
@@ -391,164 +411,12 @@ namespace WebCrawler
         }
 
 
-        static string RemoveAccents(string input)
-        {
-            string normalized = input.Normalize(NormalizationForm.FormKD);
-            Encoding removal = Encoding.GetEncoding(Encoding.ASCII.CodePage,
-                                                    new EncoderReplacementFallback(""),
-                                                    new DecoderReplacementFallback(""));
-            byte[] bytes = removal.GetBytes(normalized);
-            return Encoding.ASCII.GetString(bytes);
-        }
+      
 
-        public static string Preprocess(string text)
-        {
-            text = Regex.Replace(text, @"['’]+s", "");
-            text = RemoveAccents(text);
+        
 
-            //remove non utf8 
-            text = Regex.Replace(text, @"[^\u0000-\u007F]+", string.Empty);
-
-            text = Regex.Replace(text, "&#[0-9]*;", " ");
-            text = Regex.Replace(text, "&nbsp;", " ");
-            text = Regex.Replace(text, "&amp;", " ");
-            text = Regex.Replace(text, ";", " ");
-            text = Regex.Replace(text, "[\x82-\xFF]", " ");
-            text = Regex.Replace(text, "\\u2023", "");
-
-
-            //remove string from under photo
-            text = Regex.Replace(text, @"((([[0-9+A-Za-z_]+,\s+)+([A-Z0-9+a-z]+\s+)*)*\|\s+([0-9+A-Za-z_\s]+\/Flickr+(\|\s+[A-Z_a-z\s]+\/Flickr)*))", "\n");
-            text = Regex.Replace(text, @"((([[0-9+A-Za-z_]+,\s+)+([A-Z0-9+a-z]+\s+)*)*\s+([0-9+A-Za-z_\s]+\/Flickr+))", "\n");
-            //Remove More Info
-            text = Regex.Replace(text, @"(More Info[A-Za-z\s0-9,+]+\sfeedback)", "");
-            text = Regex.Replace(text, @"([\sa-zA-Z,$]+Add to Plan)", "\n");
-            text = Regex.Replace(text, @"(More Info[A-Za-z\s0-9,+]+\s\$\$\$Add to Plan)", "");
-
-            //Remove #instagram
-            text = Regex.Replace(text, @"#([a-z]+)", "");
-            //Remove Address
-            text = Regex.Replace(text, @"(Address[\sa-zA-Z:&,.0-9]+)\+([0-9\s]+)", "\n");
-            //Remove Address
-            text = Regex.Replace(text, @"(([A-Za-z\s0-9.]+),\s)*\+([0-9\s]+)", "\n");
-            //Remove instagram post
-            text = Regex.Replace(text, @"(A photo posted by [A-Z&a-z,@0-9\s:()_]+PDT)", "\n");
-            text = Regex.Replace(text, @"(A photo posted by [A-Za&-z,@0-9\s:()_]+PST)", "\n");
-            text = Regex.Replace(text, @"(A photo posted by [A-Za-z,@&0-9\s:()_]+ at [0-9]+:[0-9]+)", "\n");
-            text = Regex.Replace(text, @"PST", "\n");
-            text = Regex.Replace(text, @"PDT", "\n");
-            
-            //text = Regex.Replace(text, "  ", "\n");
-
-            text = Regex.Replace(text, @"(([\n\t])+|(\s\s)+)", "\n");
-            //text = Regex.Replace(text, @"(([  ])+)", "");
-            
-            text = new string(text.Where(c => char.IsLetter(c) || char.IsDigit(c) || char.IsWhiteSpace(c) || char.IsPunctuation(c) || !char.IsControl(c)).ToArray());
-
-            text = Regex.Replace(text, "([a-z])([A-Z])", "$1\n$2");
-           
-            text = Regex.Replace(text, "Give us feedback", "");
-
-            return text;
-        }
-
-        public static List<string>  GetTags(string text)
-        {
-            List<string> tagsList = new List<string>();
-            string tags;
-            if (text != null)
-            {
-                text = Preprocess(text);
-
-                if (text.Length > 1)
-                {
-                    tags = RestAPICaller.GetTags(text);
-                    if (tags != null)
-                    {
-                        tags = Regex.Replace(tags, "\"", "");
-                        tags = tags.Replace("[", "");
-                        tags = Regex.Replace(tags, "]", "");
-
-                        foreach (string tag in tags.Split(','))
-                            tagsList.Add(tag.Trim());
-                    }
-                }
-            }
-
-            return tagsList;
-        }
-
-        public void UpdateBlogsTags(List<Blog> blogs)
-        {
-            foreach (Blog blog in blogs)
-            {
-                    text = Crawler.ReadTextFrom(blog.BlogLink);
-                    text = Crawler.Preprocess(text);
-
-                    List<string> tagsList = new List<string>();
-                    tagsList = Crawler.GetTags(text);
-
-                    tagsList = tagsList.Where(tag => tag.Length > 2).ToList();
-
-                  
-                    tagsList.AddRange(blog.Tags);
-                    tagsList = tagsList.Distinct<string>().ToList();
-
-                    FireBaseDatabase.UpdateBlog(blog.Id, "tags", tagsList);
-            }
-        }
-
-        public int CountWordInBlog(List<Blog> blogs, string word)
-        {
-            int count = 0;
-
-            foreach (Blog blog in blogs)
-            {
-                text = Crawler.ReadTextFrom(blog.BlogLink);
-                text = Crawler.Preprocess(text);
-
-                count += Regex.Matches(text.ToLower(), word.ToLower()).Count;
-
-            }
-
-            return count;
-
-        }
-        public void CreateBlogs()
-        {
-            List<string> tagsList = new List<string>();
-
-            Blog blog;
-            string text;
-            string date;
-            string tags;
-
-            foreach (string key in blogs.Keys)
-            {
-                foreach (string link in blogs[key])
-                {
-                    text = "";
-                    date = "";
-                    tags = "";
-                    tagsList = new List<string>();
-                    blog = new Blog();
-                    blog.LocationName = key;
-                    blog.BlogLink = link;
-                    initAsync(link);
-                    text = Crawler.GetText(TextDivAttribute, TextDivAttributeName);
-
-                    tagsList = GetTags(text);
-
-                    blog.Tags = tagsList;
-
-                    date = GetDate();
-                    blog.Date = date;
-
-                    FireBaseDatabase.Insert(blog);
-
-                }
-            }
-        }
+       
+        
     }
 
 }

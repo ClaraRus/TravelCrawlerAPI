@@ -21,26 +21,8 @@ namespace ChatbotRestAPI.Services
 	{
         static object Lock = new object();
 
-        private static List<string> PreprocessTags(List<string> tags)
-        {
-           
-            tags.ForEach(tag => tag = new string(tag.Where(c => !char.IsPunctuation(c) && !char.IsWhiteSpace(c)).ToArray()));
-            tags = tags.Where(tag => !tag.Equals("")).ToList();
 
-            return tags;
-        }
-
-
-        private static List<string> FilterDestinationsByBlogs(List<string> destinations)
-        {
-            List<Blog> allBlogs = FireBaseDatabase.SelectAllBlogs();
-            List<string> filteredDestinations = new List<string>();
-            foreach (string destination in destinations)
-                if (allBlogs.Where(x => x.LocationName.ToLower().Equals(destination.ToLower())).Count() > 0)
-                    filteredDestinations.Add(destination);
-
-            return filteredDestinations;
-        }
+       
 		public static string GetResponse(string input)
 		{
             input = input.ToLower();
@@ -49,7 +31,7 @@ namespace ChatbotRestAPI.Services
             string location = input.Split(' ')[0].ToLower();
 
             tags.Remove(location);
-            tags = PreprocessTags(tags);
+            tags = TextProcessor.PreprocessTags(tags);
 
             
             List<JObject> placesNERtemp = new List<JObject>();
@@ -65,19 +47,19 @@ namespace ChatbotRestAPI.Services
                 {
                     if (destination.Country.Count > 1)
                     {
-                        List<string> countries = FilterDestinationsByBlogs(destination.Country);
+                        List<string> countries = FireBaseDatabase.FilterDestinationsByBlogs(destination.Country);
                         return JsonConvert.SerializeObject(countries);
                     }
                     else
                     if (destination.State.Count > 1)
                     {
-                        List<string> states = FilterDestinationsByBlogs(destination.State);
+                        List<string> states = FireBaseDatabase.FilterDestinationsByBlogs(destination.State);
                         return JsonConvert.SerializeObject(states);
                     }
                     else
                     if (destination.City.Count > 1)
                     {
-                        List<string> cities = FilterDestinationsByBlogs(destination.City);
+                        List<string> cities = FireBaseDatabase.FilterDestinationsByBlogs(destination.City);
                         return JsonConvert.SerializeObject(cities);
                     }
                 }
@@ -101,36 +83,28 @@ namespace ChatbotRestAPI.Services
                     string text = "";
 
                     List<string> contentBlogs = new List<string>();
-                    string title;
-                    // Use type parameter to make subtotal a long, not an int
 
                     var watch = System.Diagnostics.Stopwatch.StartNew();
                     Parallel.For<JObject>(0, blogs.Count, () => new JObject(), (i, loop, data) =>
                     {
-                        //string text="";
                         string places;
-
                         lock (Lock)
                         {                 
                            text = Crawler.ReadTextFrom(blogs[(int)i].BlogLink);
-                           text = Crawler.Preprocess(text);
+                           text = TextProcessor.Preprocess(text);
                         }
-
-                        //System.IO.File.WriteAllText(@"C:\Users\Clara2\Desktop\Licenta\TestBERT\Blog" + i + ".txt", text);
-
                         places = RestAPICaller.GetPlacesNER (text, destination);
                         data = (JObject)JsonConvert.DeserializeObject(places);
 
                         return data;
                     },
                         (x) =>  placesNER.Add(x)
-                        
                     );
 
                     watch.Stop();
                     var elapsedMs = watch.ElapsedMilliseconds;
-                    System.IO.File.WriteAllText(@"C:\Users\Clara2\Desktop\Licenta\TestBERT\Time.txt", elapsedMs.ToString());
-                    //double time = Convert.ToDouble(endTime) - Convert.ToDouble(startTime); 
+                    System.IO.File.WriteAllText(@"Time.txt", elapsedMs.ToString());
+
                     placesNERtemp = placesNER.ToList();
                     placesNERtemp.Add((JObject)JsonConvert.DeserializeObject("{\"destination\":\"" + destination + "\"}"));
                     response = RestAPICaller.GetPlacesNERFinal(JsonConvert.SerializeObject(placesNERtemp));
@@ -182,7 +156,7 @@ namespace ChatbotRestAPI.Services
                     {
                         text = Crawler.ReadTextFrom(blogs[(int)i].BlogLink);
                         text = Regex.Replace(text, @"((\n[A-Z a-z]+,)\s([A-Z a-z]+,)*\s*([A-Z a-z]+)\n)", "\n");
-                        text = Crawler.Preprocess(text);
+                        text = TextProcessor.Preprocess(text);
                     }
 
                     string json = RestAPICaller.GetParagraphs(text, place);
@@ -232,58 +206,37 @@ namespace ChatbotRestAPI.Services
             return false;
         }
 
-       
 
-        public static string TagsFromBlog(string input)
+
+        public static string CreateDataset(string input)
         {
-            List<string> filters = new List<string>();
-            //suggestions = new string[] { "cheap", "fun", "romantic", "interesting", "Type", "Ready" };
-            //suggestions = new string[] { "night", "outdoor", "kids", "free", "Type", "Ready" };
-            //suggestions = new string[] { "hotel", "hostel", "apartment", "romantic", "cheap", "Type", "Ready" };
-
-            string [] filtersString = { "cheap", "fun", "romantic", "family", "interesting", "night", "outdoor", "kid", "free", "hotel", "hostel", "apartment", "romantic", "cheap" };
-            List<Blog> blogs = FireBaseDatabase.SelectAllBlogs();
-            List<Blog> filteredBlogsTags;
-            //using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"C:\Users\Clara2\Desktop\Licenta\TestBERT\TestTags.txt"))
-            //{
-            //  foreach (string filter in filtersString)
-            // {
-            // file.Write(filter);
-            //   filters.Add(filter);
-            // filteredBlogsTags = FireBaseDatabase.FilterBlogsByFilters(filters, blogs);
-            // file.Write(filteredBlogsTags.Count);
-            // file.Write("\n\n");
-            // filters.Remove(filter);
-            //}
-            // }
-
-            string word = input.Split(' ')[1];
-            if (input.Contains("theculturetrip"))
+            try
             {
-                blogs = blogs.Where(blog => blog.BlogLink.Contains("theculturetrip")).ToList();
-                //blogs = blogs.GetRange(blogs.Count/2, blogs.Count/2);
-                Crawler_theculturetrip crawlerTheCultureTrip = new Crawler_theculturetrip();       
-                crawlerTheCultureTrip.CountWordInBlog(blogs, " "+word+" ");
-
-                //crawlerTheCultureTrip.UpdateBlogsTags(blogs);
+                Dataset.Create(input);
             }
-            else if (input.Contains("abrokenbackpack"))
+            catch(Exception e)
             {
-                blogs = blogs.Where(blog => blog.BlogLink.Contains("abrokenbackpack")).ToList();
-                Crawler_abrokenbackpack crawlerBrockenBackpack = new Crawler_abrokenbackpack();
-                crawlerBrockenBackpack.CountWordInBlog(blogs, " " + word + " ");
-
-                //crawlerBrockenBackpack.UpdateBlogsTags(blogs);
-
+                return e.Message;
             }
-            else return "Error";
-           
 
-            return "";
-
-
-            return "Done";
+            return "Dataset Created!";
 
         }
+
+        public static string UpdateDatasetTags(string input)
+        {
+            try
+            {
+                List<Blog> blogs = FireBaseDatabase.SelectAllBlogs();
+                Dataset.UpdateBlogsTags(blogs);
+            }catch(Exception e)
+            {
+                return e.Message;
+            }
+
+            return "Dataset Updated!";
+        }
+
+       
     }
 }

@@ -12,7 +12,9 @@ namespace ChatbotRestAPI.Controllers
 
     public class ResponseController : ApiController
     {
-        
+
+        string adminKey = "y1r3QaQoPS18ccBc99vy08QCJcM6ik";
+
         // GET      /GetResponse
         [System.Web.Http.ActionName("GetResponse")]
         public string GetResponse(string input)
@@ -46,12 +48,14 @@ namespace ChatbotRestAPI.Controllers
         }
 
         // GET      /GetTags
-        [System.Web.Http.ActionName("GetTagsFromBlog")]
-        public string GetTagsFromBlog(string input)
+        [System.Web.Http.ActionName("CreateDataset")]
+        public string GetCreateDataset(string input)
         {
             try
             {
-                return ResponseControllerRepository.TagsFromBlog(input).ToString();
+                if(input.Contains(adminKey))
+                    return ResponseControllerRepository.CreateDataset(input).ToString();
+                else return "Permission Denied!";
             }
             catch (Exception e)
             {
@@ -60,7 +64,24 @@ namespace ChatbotRestAPI.Controllers
 
         }
 
-        // GET      /GetTags
+        [System.Web.Http.ActionName("UpdateDatasetTags")]
+        public string GetUpdateDataset(string input)
+        {
+            try
+            {
+                if (input.Contains(adminKey))
+                    return ResponseControllerRepository.UpdateDatasetTags(input).ToString();
+                else return "Permission Denied!";
+
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Failed", e);
+            }
+
+        }
+
+        // GET      /GetParagraphs
         [System.Web.Http.ActionName("GetParagraphs")]
         public string GetParagraphs(string input)
         {
@@ -71,7 +92,6 @@ namespace ChatbotRestAPI.Controllers
             }
             catch (Exception e)
             {
-                string exception = e.Message;
                 throw new Exception("Failed", e);
             }
 

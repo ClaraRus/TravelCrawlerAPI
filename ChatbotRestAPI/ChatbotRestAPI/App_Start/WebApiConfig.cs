@@ -27,9 +27,15 @@ namespace ChatbotRestAPI
 		);
 
 			config.Routes.MapHttpRoute(
-			name: "TagsFromBlog",
-			routeTemplate: "api/response/GetTagsFromBlog/{input}",
-			defaults: new { controller = "response", action = "GetTagsFromBlog" }
+			name: "CreateDataset",
+			routeTemplate: "api/response/GetCreateDataset/{input}",
+			defaults: new { controller = "response", action = "GetCreateDataset" }
+		);
+
+			config.Routes.MapHttpRoute(
+			name: "UpdateDataset",
+			routeTemplate: "api/response/GetUpdateDataset/{input}",
+			defaults: new { controller = "response", action = "GetUpdateDataset" }
 		);
 
 			config.Routes.MapHttpRoute(

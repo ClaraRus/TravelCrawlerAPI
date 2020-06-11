@@ -26,9 +26,15 @@ namespace ChatbotRestAPI
 			);
 
 			routes.MapRoute(
-			name: "GetTagsFromBlog",
-			url: "Response/GetTagsFromBlog",
-			defaults: new { controller = "Response", action = "GetTagsFromBlog" }
+			name: "GetCreateDataset",
+			url: "Response/GetCreateDataset",
+			defaults: new { controller = "Response", action = "GetCreateDataset" }
+			);
+
+			routes.MapRoute(
+			name: "GetUpdateDataset",
+			url: "Response/GetUpdateDataset",
+			defaults: new { controller = "Response", action = "GetUpdateDataset" }
 			);
 
 			routes.MapRoute(
@@ -36,6 +42,8 @@ namespace ChatbotRestAPI
 			url: "Response/GetParagraphs",
 			defaults: new { controller = "Response", action = "GetParagraphs" }
 			);
+
+			
 
 
 			routes.MapRoute(
