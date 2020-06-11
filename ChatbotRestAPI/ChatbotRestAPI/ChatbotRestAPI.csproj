@@ -227,12 +227,12 @@
     <Compile Include="Services\Crawlers\Crawler_abrokenbackpack.cs" />
     <Compile Include="Models\Blog.cs" />
     <Compile Include="Services\Crawlers\Crawler.cs" />
-    <Compile Include="Services\Firebase\DatabasePopulation.cs" />
-    <Compile Include="Services\Firebase\FireBaseDatabase.cs" />
-    <Compile Include="Services\InputAnalyzer.cs" />
+    <Compile Include="Services\Database\Dataset.cs" />
+    <Compile Include="Services\Database\FireBaseDatabase.cs" />
     <Compile Include="Services\ResponseControllerRepository.cs" />
     <Compile Include="Services\RestAPICaller.cs" />
     <Compile Include="Services\Crawlers\Crawler_theculturetrip.cs" />
+    <Compile Include="Services\TextProcessor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Areas\HelpPage\HelpPage.css" />

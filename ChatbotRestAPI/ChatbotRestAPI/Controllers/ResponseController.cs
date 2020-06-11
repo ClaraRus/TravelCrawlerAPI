@@ -48,7 +48,7 @@ namespace ChatbotRestAPI.Controllers
         }
 
         // GET      /GetTags
-        [System.Web.Http.ActionName("CreateDataset")]
+        [System.Web.Http.ActionName("GetCreateDataset")]
         public string GetCreateDataset(string input)
         {
             try
@@ -64,7 +64,7 @@ namespace ChatbotRestAPI.Controllers
 
         }
 
-        [System.Web.Http.ActionName("UpdateDatasetTags")]
+        [System.Web.Http.ActionName("GetUpdateDatasetTags")]
         public string GetUpdateDataset(string input)
         {
             try
