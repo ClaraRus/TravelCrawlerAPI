@@ -47,7 +47,7 @@ namespace ChatbotRestAPI.Services
                 {
                     if (destination.Country.Count > 1)
                     {
-                        List<string> countries = FireBaseDatabase.FilterDestinationsByBlogs(destination.Country);
+                        List<string> countries = FireBaseDatabase.FilterDestinationsByBlogs(destination.Country, tags);
                         if(countries.Count > 0)
                             return JsonConvert.SerializeObject(countries);
                         else return "error";
@@ -55,12 +55,12 @@ namespace ChatbotRestAPI.Services
                     else
                     if (destination.State.Count > 1)
                     {
-                        List<string> states = FireBaseDatabase.FilterDestinationsByBlogs(destination.State);
+                        List<string> states = FireBaseDatabase.FilterDestinationsByBlogs(destination.State, tags);
                         if (states.Count > 0)
                             return JsonConvert.SerializeObject(states);
                         else
                         {
-                            List<string> cities = FireBaseDatabase.FilterDestinationsByBlogs(destination.City);
+                            List<string> cities = FireBaseDatabase.FilterDestinationsByBlogs(destination.City, tags);
                             if (cities.Count > 0)
                                 return JsonConvert.SerializeObject(cities);
                             else return "error";
@@ -69,7 +69,7 @@ namespace ChatbotRestAPI.Services
                     else
                     if (destination.City.Count > 1)
                     {
-                        List<string> cities = FireBaseDatabase.FilterDestinationsByBlogs(destination.City);
+                        List<string> cities = FireBaseDatabase.FilterDestinationsByBlogs(destination.City, tags);
                         if (cities.Count > 0)
                             return JsonConvert.SerializeObject(cities);
                         else return "error";

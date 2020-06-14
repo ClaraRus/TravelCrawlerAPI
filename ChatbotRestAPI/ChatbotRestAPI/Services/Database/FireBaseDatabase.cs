@@ -337,13 +337,18 @@ namespace WebCrawler
            
         }
 
-        public static List<string> FilterDestinationsByBlogs(List<string> destinations)
+        public static List<string> FilterDestinationsByBlogs(List<string> destinations, List<string> tags)
         {
+            
             List<Blog> allBlogs = FireBaseDatabase.SelectAllBlogs();
             List<string> filteredDestinations = new List<string>();
             foreach (string destination in destinations)
-                if (allBlogs.Where(x => x.LocationName.ToLower().Equals(destination.ToLower())).Count() > 0)
+            {
+                List<Blog> blogs = allBlogs.Where(x => x.LocationName.ToLower().Equals(destination.ToLower())).ToList();
+                blogs = FilterBlogsBy(tags, blogs);
+                if(blogs.Count() > 0)
                     filteredDestinations.Add(destination);
+            }
 
             return filteredDestinations;
         }
