@@ -39,22 +39,26 @@ namespace ChatbotRestAPI.Models
 			string dst = "";
 			if(City!=null)
 			{
-				dst += City.ToString()+" ";
+				foreach(string c in City)
+					dst += c+" ";
 			}
 
 			if(Country!=null)
 			{
-				dst += Country.ToString()+" ";
+				foreach (string c in Country)
+					dst += c+" ";
 			}
 
 			if(State!=null)
 			{
-				dst += State.ToString()+" ";
+				foreach (string s in State)
+					dst += s+" ";
 			}
 
 			if(Continent!=null)
 			{
-				dst += Continent.ToString();
+				foreach (string c in Continent)
+					dst += c+" ";
 			}
 
 			return dst;

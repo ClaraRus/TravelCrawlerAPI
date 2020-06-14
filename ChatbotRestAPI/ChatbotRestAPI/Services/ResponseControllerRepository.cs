@@ -48,19 +48,31 @@ namespace ChatbotRestAPI.Services
                     if (destination.Country.Count > 1)
                     {
                         List<string> countries = FireBaseDatabase.FilterDestinationsByBlogs(destination.Country);
-                        return JsonConvert.SerializeObject(countries);
+                        if(countries.Count > 0)
+                            return JsonConvert.SerializeObject(countries);
+                        else return "error";
                     }
                     else
                     if (destination.State.Count > 1)
                     {
                         List<string> states = FireBaseDatabase.FilterDestinationsByBlogs(destination.State);
-                        return JsonConvert.SerializeObject(states);
+                        if (states.Count > 0)
+                            return JsonConvert.SerializeObject(states);
+                        else
+                        {
+                            List<string> cities = FireBaseDatabase.FilterDestinationsByBlogs(destination.City);
+                            if (cities.Count > 0)
+                                return JsonConvert.SerializeObject(cities);
+                            else return "error";
+                        }
                     }
                     else
                     if (destination.City.Count > 1)
                     {
                         List<string> cities = FireBaseDatabase.FilterDestinationsByBlogs(destination.City);
-                        return JsonConvert.SerializeObject(cities);
+                        if (cities.Count > 0)
+                            return JsonConvert.SerializeObject(cities);
+                        else return "error";
                     }
                 }
 

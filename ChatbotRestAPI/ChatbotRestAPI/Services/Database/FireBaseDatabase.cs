@@ -121,11 +121,17 @@ namespace WebCrawler
                 d.Country.Add(country.Name);
 
                 List<State> states = SelectStateBy("country_id", country.Id);
-                foreach(State c in states)
+                foreach(State s in states)
+                {
+                    d.State.Add(s.Name);
+                }
+
+                List<City> cities = SelectCitytBy("country_id", country.Id);
+                foreach (City c in cities)
                 {
                     d.City.Add(c.Name);
                 }
-                
+
                 continent = SelectContinentBy("id", country.Continent_id)[0];
                 d.Continent.Add(continent.Name);
             }
